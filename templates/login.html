@@ -1,24 +1,31 @@
 <!-- templates/login.html -->
 {% extends "index.html" %}
 {% block content %}
-<div class="container mt-5" style="max-width:400px;">
-    <h2>Giriş Yap</h2>
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-danger">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
-    <form method="post">
-        {% csrf_token %}
-        <div class="mb-3">
-            <label class="form-label">Kullanıcı Adı</label>
-            <input type="text" name="username" class="form-control" required>
+<div class="container" style="margin-top: 120px; margin-bottom: 100px; max-width:450px;">
+    <div class="card shadow-sm">
+        <div class="card-body p-4">
+            <h2 class="text-center mb-4">Giriş Yap</h2>
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-danger">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label">Kullanıcı Adı</label>
+                    <input type="text" name="username" class="form-control" required>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label">Şifre</label>
+                    <input type="password" name="password" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 py-2">Giriş Yap</button>
+            </form>
+            <div class="mt-4 text-center">
+                <a href="{% url 'register' %}">Hesabınız yok mu? Kayıt olun</a>
+            </div>
         </div>
-        <div class="mb-3">
-            <label class="form-label">Şifre</label>
-            <input type="password" name="password" class="form-control" required>
-        </div>
-        <button type="submit" class="btn btn-primary w-100">Giriş Yap</button>
-    </form>
+    </div>
 </div>
 {% endblock %}
