@@ -1,0 +1,251 @@
+<!-- templates/tracking_result.html -->
+{% extends "index.html" %}
+{% block content %}
+<div class="container mt-5">
+    <h2>Kargo Takip Sonucu</h2>
+    
+    {% if not shipment %}
+        <div class="alert alert-warning">
+            <h4>Takip numarası bulunamadı: {{ tracking_number }}</h4>
+            <p>Lütfen takip numaranızı kontrol edip tekrar deneyin.</p>
+        </div>
+        <div class="card mt-3 mb-3">
+            <div class="card-body">
+                <form action="/tracking-result/" method="get" class="row g-3">
+                    <div class="col-md-8">
+                        <input type="text" name="tracking_number" class="form-control" placeholder="Takip numaranızı girin..." required>
+                    </div>
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-primary w-100">Kargo Sorgula</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    {% else %}
+        <div class="card mb-4 border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Takip No: {{ shipment.tracking_number }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Gönderici Bilgileri</h5>
+                        <p><strong>İsim:</strong> {{ shipment.sender_name }}</p>
+                        <p><strong>Adres:</strong> {{ shipment.sender_address }}</p>
+                        <p><strong>Telefon:</strong> {{ shipment.sender_phone }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Alıcı Bilgileri</h5>
+                        <p><strong>İsim:</strong> {{ shipment.receiver_name }}</p>
+                        <p><strong>Adres:</strong> {{ shipment.receiver_address }}</p>
+                        <p><strong>Telefon:</strong> {{ shipment.receiver_phone }}</p>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-md-4">
+                        <p><strong>Gönderi Türü:</strong> {{ shipment.get_shipment_type_display }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <p><strong>Ağırlık:</strong> {{ shipment.weight_kg }} kg</p>
+                    </div>
+                    <div class="col-md-4">
+                        <p><strong>Hacim:</strong> {{ shipment.volume_m3 }} m³</p>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Tahmini Teslim Tarihi:</strong> {{ shipment.estimated_delivery }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p>
+                            <strong>Durum:</strong> 
+                            <span class="badge {% if shipment.status == 'delivered' %}bg-success{% elif shipment.status == 'not_delivered' %}bg-danger{% else %}bg-warning{% endif %}">
+                                {{ shipment.get_status_display }}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h4>Kargo Durumu</h4>
+        <div class="tracking-progress mb-4">
+            <div class="progress">
+                {% if shipment.status == 'preparing' %}
+                    <div class="progress-bar bg-info" role="progressbar" style="width: 20%" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
+                {% elif shipment.status == 'on_the_way' %}
+                    <div class="progress-bar bg-info" role="progressbar" style="width: 40%" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100"></div>
+                {% elif shipment.status == 'in_distribution' %}
+                    <div class="progress-bar bg-info" role="progressbar" style="width: 70%" aria-valuenow="70" aria-valuemin="0" aria-valuemax="100"></div>
+                {% elif shipment.status == 'delivered' %}
+                    <div class="progress-bar bg-success" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+                {% elif shipment.status == 'not_delivered' %}
+                    <div class="progress-bar bg-danger" role="progressbar" style="width: 70%" aria-valuenow="70" aria-valuemin="0" aria-valuemax="100"></div>
+                {% endif %}
+            </div>
+            <div class="d-flex justify-content-between mt-2">
+                <div class="tracking-step {% if shipment.status != '' %}active{% endif %}">
+                    <div class="step-icon">1</div>
+                    <div class="step-text">Hazırlanıyor</div>
+                </div>
+                <div class="tracking-step {% if shipment.status in 'on_the_way,in_distribution,delivered,not_delivered' %}active{% endif %}">
+                    <div class="step-icon">2</div>
+                    <div class="step-text">Yolda</div>
+                </div>
+                <div class="tracking-step {% if shipment.status in 'in_distribution,delivered,not_delivered' %}active{% endif %}">
+                    <div class="step-icon">3</div>
+                    <div class="step-text">Dağıtımda</div>
+                </div>
+                <div class="tracking-step {% if shipment.status in 'delivered,not_delivered' %}{% if shipment.status == 'delivered' %}active{% else %}failed{% endif %}{% endif %}">
+                    <div class="step-icon">4</div>
+                    <div class="step-text">Teslim Edildi</div>
+                </div>
+            </div>
+        </div>
+
+        <h4>Durum Geçmişi</h4>
+        <div class="timeline mb-4">
+            {% for t in history %}
+                <div class="timeline-item">
+                    <div class="timeline-marker {% if t.status == 'delivered' %}bg-success{% elif t.status == 'not_delivered' %}bg-danger{% else %}bg-info{% endif %}"></div>
+                    <div class="timeline-content">
+                        <h5 class="mb-1">{{ t.get_status_display }}</h5>
+                        <p class="mb-0">{{ t.timestamp|date:'d.m.Y H:i' }}
+                        {% if t.note %}<span class="text-muted"> - {{ t.note }}</span>{% endif %}</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        {% if shipment.vehicle or shipment.driver %}
+        <h4>Teslimat Bilgileri</h4>
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row">
+                    {% if shipment.vehicle %}
+                    <div class="col-md-6">
+                        <h5>Araç Bilgileri</h5>
+                        <p><strong>Model:</strong> {{ shipment.vehicle.model }}</p>
+                        <p><strong>Plaka:</strong> {{ shipment.vehicle.plate }}</p>
+                    </div>
+                    {% endif %}
+                    {% if shipment.driver %}
+                    <div class="col-md-6">
+                        <h5>Sürücü Bilgileri</h5>
+                        <p><strong>İsim:</strong> {{ shipment.driver.name }}</p>
+                        <p><strong>Telefon:</strong> {{ shipment.driver.phone }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    {% endif %}
+    
+    <div class="d-flex justify-content-between">
+        <a href="/" class="btn btn-primary">Ana Sayfa</a>
+        {% if shipment %}
+        <a href="#" class="btn btn-outline-secondary" onclick="window.print()"><i class="fas fa-print"></i> Yazdır</a>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .tracking-progress {
+        margin-top: 20px;
+    }
+    
+    .tracking-progress .progress {
+        height: 8px;
+        background-color: #e9ecef;
+        border-radius: 4px;
+        margin-bottom: 20px;
+    }
+    
+    .tracking-step {
+        text-align: center;
+        width: 25%;
+        color: #6c757d;
+    }
+    
+    .tracking-step.active {
+        color: #007bff;
+        font-weight: bold;
+    }
+    
+    .tracking-step.failed {
+        color: #dc3545;
+        font-weight: bold;
+    }
+    
+    .step-icon {
+        width: 30px;
+        height: 30px;
+        background-color: #e9ecef;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 5px;
+    }
+    
+    .tracking-step.active .step-icon {
+        background-color: #007bff;
+        color: white;
+    }
+    
+    .tracking-step.failed .step-icon {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    
+    .timeline:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 9px;
+        width: 2px;
+        height: 100%;
+        background-color: #e9ecef;
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 20px;
+    }
+    
+    .timeline-marker {
+        position: absolute;
+        left: -30px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background-color: #007bff;
+    }
+    
+    .timeline-content {
+        padding-bottom: 10px;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    @media print {
+        .btn, form, .card-header {
+            display: none !important;
+        }
+        
+        .card {
+            border: none !important;
+        }
+        
+        .card-body {
+            padding: 0 !important;
+        }
+    }
+</style>
+{% endblock %}

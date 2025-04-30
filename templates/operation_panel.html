@@ -1,0 +1,265 @@
+<!-- templates/operation_panel.html -->
+{% extends "index.html" %}
+{% block content %}
+<div class="container-fluid mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Operasyon Paneli</h2>
+        <div>
+            <a href="/reports/" class="btn btn-info me-2"><i class="fas fa-chart-bar"></i> Raporlar</a>
+            <a href="/shipment-create/" class="btn btn-success"><i class="fas fa-plus"></i> Yeni Gönderi</a>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Filtreleme Seçenekleri</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Arama</label>
+                    <input type="text" name="search" class="form-control" placeholder="Takip No, Gönderici, Alıcı veya Şehir" value="{{ request.GET.search }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Durum</label>
+                    <select name="status" class="form-select">
+                        <option value="">Tüm Durumlar</option>
+                        <option value="preparing" {% if request.GET.status == 'preparing' %}selected{% endif %}>Hazırlanıyor</option>
+                        <option value="on_the_way" {% if request.GET.status == 'on_the_way' %}selected{% endif %}>Yolda</option>
+                        <option value="in_distribution" {% if request.GET.status == 'in_distribution' %}selected{% endif %}>Dağıtımda</option>
+                        <option value="delivered" {% if request.GET.status == 'delivered' %}selected{% endif %}>Teslim Edildi</option>
+                        <option value="not_delivered" {% if request.GET.status == 'not_delivered' %}selected{% endif %}>Teslim Edilemedi</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Tarih Aralığı</label>
+                    <select name="date_range" class="form-select">
+                        <option value="">Tüm Tarihler</option>
+                        <option value="today" {% if request.GET.date_range == 'today' %}selected{% endif %}>Bugün</option>
+                        <option value="yesterday" {% if request.GET.date_range == 'yesterday' %}selected{% endif %}>Dün</option>
+                        <option value="last_week" {% if request.GET.date_range == 'last_week' %}selected{% endif %}>Son 7 Gün</option>
+                        <option value="last_month" {% if request.GET.date_range == 'last_month' %}selected{% endif %}>Son 30 Gün</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Gönderi Türü</label>
+                    <select name="shipment_type" class="form-select">
+                        <option value="">Tüm Türler</option>
+                        <option value="document" {% if request.GET.shipment_type == 'document' %}selected{% endif %}>Belge</option>
+                        <option value="box" {% if request.GET.shipment_type == 'box' %}selected{% endif %}>Koli</option>
+                        <option value="pallet" {% if request.GET.shipment_type == 'pallet' %}selected{% endif %}>Palet</option>
+                        <option value="other" {% if request.GET.shipment_type == 'other' %}selected{% endif %}>Diğer</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2"><i class="fas fa-filter"></i> Filtrele</button>
+                    <a href="/operation-panel/" class="btn btn-outline-secondary"><i class="fas fa-redo"></i> Filtreleri Sıfırla</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Gönderiler</h5>
+            <span class="badge bg-primary">{{ shipments|length }} kayıt</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th><input type="checkbox" id="selectAll" class="form-check-input"></th>
+                            <th>Takip No</th>
+                            <th>Oluşturma Tarihi</th>
+                            <th>Gönderici</th>
+                            <th>Alıcı</th>
+                            <th>Teslim Adresi</th>
+                            <th>Tahmini Teslim</th>
+                            <th>Durum</th>
+                            <th>Araç</th>
+                            <th>Şoför</th>
+                            <th>İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in shipments %}
+                        <tr>
+                            <td><input type="checkbox" class="form-check-input shipment-select" value="{{ s.id }}"></td>
+                            <td><a href="/tracking-result/?tracking_number={{ s.tracking_number }}" target="_blank">{{ s.tracking_number }}</a></td>
+                            <td>{{ s.created_at|date:'d.m.Y' }}</td>
+                            <td>{{ s.sender_name }}</td>
+                            <td>{{ s.receiver_name }}</td>
+                            <td>{{ s.receiver_address }}</td>
+                            <td>{{ s.estimated_delivery|date:'d.m.Y' }}</td>
+                            <td>
+                                <span class="badge {% if s.status == 'delivered' %}bg-success{% elif s.status == 'not_delivered' %}bg-danger{% elif s.status == 'in_distribution' %}bg-info{% elif s.status == 'on_the_way' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                    {{ s.get_status_display }}
+                                </span>
+                            </td>
+                            <td>{% if s.vehicle %}{{ s.vehicle.plate }}{% else %}-{% endif %}</td>
+                            <td>{% if s.driver %}{{ s.driver.name }}{% else %}-{% endif %}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="/operation-panel/update/{{ s.id }}/" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></a>
+                                    <a href="/tracking-result/?tracking_number={{ s.tracking_number }}" class="btn btn-sm btn-info"><i class="fas fa-search"></i></a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="11" class="text-center">Kayıt bulunamadı.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="bulk-actions">
+                    <select id="bulkAction" class="form-select form-select-sm" style="width: 200px; display: inline-block;">
+                        <option value="">Toplu İşlem Seçin...</option>
+                        <option value="status_update">Durum Güncelle</option>
+                        <option value="assign_vehicle">Araç Ata</option>
+                        <option value="assign_driver">Sürücü Ata</option>
+                    </select>
+                    <button id="applyBulkAction" class="btn btn-sm btn-primary ms-2" disabled>Uygula</button>
+                </div>
+                <div>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="window.print()"><i class="fas fa-print"></i> Yazdır</button>
+                    <button class="btn btn-sm btn-outline-success" id="exportCsv"><i class="fas fa-file-csv"></i> CSV İndir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Bulk Actions -->
+<div class="modal fade" id="bulkActionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bulkActionModalTitle">Toplu İşlem</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="bulkActionModalBody">
+                <!-- Content will be dynamically injected -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-primary" id="confirmBulkAction">Uygula</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Select All Checkbox
+    document.getElementById('selectAll').addEventListener('change', function() {
+        document.querySelectorAll('.shipment-select').forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        updateBulkActionButton();
+    });
+    
+    // Individual checkboxes
+    document.querySelectorAll('.shipment-select').forEach(checkbox => {
+        checkbox.addEventListener('change', updateBulkActionButton);
+    });
+    
+    // Bulk Action Button
+    function updateBulkActionButton() {
+        const checkedBoxes = document.querySelectorAll('.shipment-select:checked');
+        document.getElementById('applyBulkAction').disabled = checkedBoxes.length === 0;
+    }
+    
+    // Apply Bulk Action
+    document.getElementById('applyBulkAction').addEventListener('click', function() {
+        const action = document.getElementById('bulkAction').value;
+        if (!action) {
+            alert('Lütfen bir işlem seçin.');
+            return;
+        }
+        
+        const selectedIds = Array.from(document.querySelectorAll('.shipment-select:checked'))
+            .map(checkbox => checkbox.value);
+            
+        if (selectedIds.length === 0) {
+            alert('Lütfen en az bir gönderi seçin.');
+            return;
+        }
+        
+        // Show modal with appropriate content based on action
+        const modal = document.getElementById('bulkActionModal');
+        const modalTitle = document.getElementById('bulkActionModalTitle');
+        const modalBody = document.getElementById('bulkActionModalBody');
+        
+        if (action === 'status_update') {
+            modalTitle.textContent = 'Durum Güncelle';
+            modalBody.innerHTML = `
+                <p>${selectedIds.length} gönderi seçildi.</p>
+                <div class="mb-3">
+                    <label class="form-label">Yeni Durum</label>
+                    <select class="form-select" id="bulkStatusSelect">
+                        <option value="preparing">Hazırlanıyor</option>
+                        <option value="on_the_way">Yolda</option>
+                        <option value="in_distribution">Dağıtımda</option>
+                        <option value="delivered">Teslim Edildi</option>
+                        <option value="not_delivered">Teslim Edilemedi</option>
+                    </select>
+                </div>
+            `;
+        } else if (action === 'assign_vehicle') {
+            modalTitle.textContent = 'Araç Ata';
+            // This would normally fetch vehicles from backend
+            modalBody.innerHTML = `
+                <p>${selectedIds.length} gönderi seçildi.</p>
+                <div class="mb-3">
+                    <label class="form-label">Araç Seçin</label>
+                    <select class="form-select" id="bulkVehicleSelect">
+                        <option value="">Araç seçiniz...</option>
+                        <!-- Vehicle options would be populated from backend -->
+                    </select>
+                </div>
+            `;
+        } else if (action === 'assign_driver') {
+            modalTitle.textContent = 'Sürücü Ata';
+            // This would normally fetch drivers from backend
+            modalBody.innerHTML = `
+                <p>${selectedIds.length} gönderi seçildi.</p>
+                <div class="mb-3">
+                    <label class="form-label">Sürücü Seçin</label>
+                    <select class="form-select" id="bulkDriverSelect">
+                        <option value="">Sürücü seçiniz...</option>
+                        <!-- Driver options would be populated from backend -->
+                    </select>
+                </div>
+            `;
+        }
+        
+        // Bootstrap modal initialization and show
+        var myModal = new bootstrap.Modal(modal);
+        myModal.show();
+        
+        // Set up confirm button action
+        document.getElementById('confirmBulkAction').onclick = function() {
+            alert(`${selectedIds.length} gönderi için ${modalTitle.textContent} işlemi yapılacak.\nBu işlevsellik backend'de tamamlanmalıdır.`);
+            myModal.hide();
+        };
+    });
+    
+    // Export to CSV
+    document.getElementById('exportCsv').addEventListener('click', function() {
+        alert('CSV dışa aktarma özelliği backend tarafından uygulanmalıdır.');
+    });
+});
+</script>
+
+<style>
+@media print {
+    .btn, .card-header, .card-footer, .form-check-input, th:first-child, td:first-child, td:last-child {
+        display: none !important;
+    }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,45 @@
+<!-- templates/reports.html -->
+{% extends "index.html" %}
+{% block content %}
+<div class="container mt-5">
+    <h2>Raporlar & İstatistikler</h2>
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-bg-primary mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Haftalık Gönderi</h5>
+                    <p class="card-text display-6">{{ weekly_count }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-success mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Aktif Araç</h5>
+                    <p class="card-text display-6">{{ active_vehicles }}/{{ total_vehicles }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-warning mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Teslim Edilmeyen Oran</h5>
+                    <p class="card-text display-6">%{{ not_delivered_ratio|floatformat:1 }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-bg-info mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">En Çok Gönderilen Şehir</h5>
+                    <ul class="list-unstyled mb-0">
+                        {% for c in top_cities %}
+                        <li>{{ c.receiver_address }} <span class="badge bg-secondary">{{ c.count }}</span></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

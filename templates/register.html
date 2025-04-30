@@ -1,0 +1,43 @@
+<!-- templates/register.html -->
+{% extends "index.html" %}
+{% block content %}
+<div class="container mt-5" style="max-width:500px;">
+    <h2>Kayıt Ol</h2>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{% if message.tags %}{{ message.tags }}{% else %}danger{% endif %}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label">Kullanıcı Adı</label>
+            <input type="text" name="username" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">E-posta</label>
+            <input type="email" name="email" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Şifre</label>
+            <input type="password" name="password" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Şifre Tekrar</label>
+            <input type="password" name="password_confirm" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Rol</label>
+            <select name="role" class="form-select">
+                <option value="customer">Müşteri</option>
+                <option value="operator">Operasyon Personeli</option>
+                <option value="admin">Yönetici</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-success w-100">Kayıt Ol</button>
+    </form>
+    <div class="mt-3 text-center">
+        <a href="/login/">Zaten hesabınız var mı? Giriş yapın</a>
+    </div>
+</div>
+{% endblock %}

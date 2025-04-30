@@ -1,0 +1,40 @@
+<!-- templates/operation_update.html -->
+{% extends "index.html" %}
+{% block content %}
+<div class="container mt-5">
+    <h2>Gönderi Düzenle</h2>
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label">Durum</label>
+            <select name="status" class="form-select">
+                <option value="preparing" {% if shipment.status == 'preparing' %}selected{% endif %}>Hazırlanıyor</option>
+                <option value="on_the_way" {% if shipment.status == 'on_the_way' %}selected{% endif %}>Yolda</option>
+                <option value="in_distribution" {% if shipment.status == 'in_distribution' %}selected{% endif %}>Dağıtımda</option>
+                <option value="delivered" {% if shipment.status == 'delivered' %}selected{% endif %}>Teslim Edildi</option>
+                <option value="not_delivered" {% if shipment.status == 'not_delivered' %}selected{% endif %}>Teslim Edilemedi</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Araç</label>
+            <select name="vehicle" class="form-select">
+                <option value="">Seçiniz</option>
+                {% for v in vehicles %}
+                <option value="{{ v.id }}" {% if shipment.vehicle and shipment.vehicle.id == v.id %}selected{% endif %}>{{ v.plate }} - {{ v.model }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Şoför</label>
+            <select name="driver" class="form-select">
+                <option value="">Seçiniz</option>
+                {% for d in drivers %}
+                <option value="{{ d.id }}" {% if shipment.driver and shipment.driver.id == d.id %}selected{% endif %}>{{ d.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Kaydet</button>
+        <a href="/operation-panel/" class="btn btn-secondary">Geri</a>
+    </form>
+</div>
+{% endblock %}
