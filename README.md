@@ -73,6 +73,11 @@ SwiftTrack, modern ve kullanıcı dostu bir kargo takip sistemidir. Bu sistem, k
 - `shipment/` - Kargo bilgileri ve işlemleri
 - `tracking/` - Kargo durum takibi ve güncelleme
 - `vehicle/` - Araç ve sürücü yönetimi
+
+<img width="1710" alt="Ekran Resmi 2025-04-30 16 27 23" src="https://github.com/user-attachments/assets/d7203c65-43ae-49b1-a2f8-a413b5f3b1c4" />
+
+
+
 - `report/` - Raporlama ve analiz işlemleri
 - `templates/` - HTML şablonları
 
