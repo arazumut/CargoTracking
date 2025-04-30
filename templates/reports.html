@@ -1,45 +1,545 @@
 <!-- templates/reports.html -->
 {% extends "index.html" %}
 {% block content %}
-<div class="container mt-5">
-    <h2>Raporlar & İstatistikler</h2>
+<div class="container-fluid mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Raporlar & İstatistikler</h2>
+        <div>
+            <a href="/operation-panel/" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Operasyon Paneline Dön
+            </a>
+        </div>
+    </div>
+
+    <!-- Dashboard Cards -->
     <div class="row mb-4">
         <div class="col-md-3">
-            <div class="card text-bg-primary mb-3">
+            <div class="card border-primary mb-3 h-100">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>Haftalık Gönderi</span>
+                        <i class="fas fa-shipping-fast fa-lg"></i>
+                    </div>
+                </div>
                 <div class="card-body">
-                    <h5 class="card-title">Haftalık Gönderi</h5>
-                    <p class="card-text display-6">{{ weekly_count }}</p>
+                    <h2 class="display-4 text-primary text-center">{{ weekly_count }}</h2>
+                    <p class="text-muted text-center">Son 7 günde oluşturulan gönderi sayısı</p>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card text-bg-success mb-3">
+            <div class="card border-success mb-3 h-100">
+                <div class="card-header bg-success text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>Aktif Araçlar</span>
+                        <i class="fas fa-truck fa-lg"></i>
+                    </div>
+                </div>
                 <div class="card-body">
-                    <h5 class="card-title">Aktif Araç</h5>
-                    <p class="card-text display-6">{{ active_vehicles }}/{{ total_vehicles }}</p>
+                    <h2 class="display-4 text-success text-center">{{ active_vehicles }}/{{ total_vehicles }}</h2>
+                    <p class="text-muted text-center">Şu anda aktif olan araç sayısı / toplam araç sayısı</p>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card text-bg-warning mb-3">
+            <div class="card border-warning mb-3 h-100">
+                <div class="card-header bg-warning text-dark">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>Teslim Edilemeyen Oran</span>
+                        <i class="fas fa-exclamation-triangle fa-lg"></i>
+                    </div>
+                </div>
                 <div class="card-body">
-                    <h5 class="card-title">Teslim Edilmeyen Oran</h5>
-                    <p class="card-text display-6">%{{ not_delivered_ratio|floatformat:1 }}</p>
+                    <h2 class="display-4 text-warning text-center">%{{ not_delivered_ratio|floatformat:1 }}</h2>
+                    <p class="text-muted text-center">Tüm gönderiler içerisinde teslim edilemeyen kargolar oranı</p>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card text-bg-info mb-3">
+            <div class="card border-info mb-3 h-100">
+                <div class="card-header bg-info text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>Teslimat Performansı</span>
+                        <i class="fas fa-chart-line fa-lg"></i>
+                    </div>
+                </div>
                 <div class="card-body">
-                    <h5 class="card-title">En Çok Gönderilen Şehir</h5>
-                    <ul class="list-unstyled mb-0">
-                        {% for c in top_cities %}
-                        <li>{{ c.receiver_address }} <span class="badge bg-secondary">{{ c.count }}</span></li>
-                        {% endfor %}
+                    <h2 class="display-4 text-info text-center">%{{ delivery_success_rate|default:'0'|floatformat:1 }}</h2>
+                    <p class="text-muted text-center">Zamanında teslim edilen kargo oranı</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <!-- Gönderi İstatistikleri Grafik -->
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Gönderi İstatistikleri</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="nav nav-tabs mb-3" id="shipmentStatsTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="daily-tab" data-bs-toggle="tab" data-bs-target="#daily" type="button" role="tab" aria-controls="daily" aria-selected="true">Günlük</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="weekly-tab" data-bs-toggle="tab" data-bs-target="#weekly" type="button" role="tab" aria-controls="weekly" aria-selected="false">Haftalık</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="monthly-tab" data-bs-toggle="tab" data-bs-target="#monthly" type="button" role="tab" aria-controls="monthly" aria-selected="false">Aylık</button>
+                        </li>
                     </ul>
+                    <div class="tab-content" id="shipmentStatsContent">
+                        <div class="tab-pane fade show active" id="daily" role="tabpanel" aria-labelledby="daily-tab">
+                            <canvas id="dailyChart" height="300"></canvas>
+                        </div>
+                        <div class="tab-pane fade" id="weekly" role="tabpanel" aria-labelledby="weekly-tab">
+                            <canvas id="weeklyChart" height="300"></canvas>
+                        </div>
+                        <div class="tab-pane fade" id="monthly" role="tabpanel" aria-labelledby="monthly-tab">
+                            <canvas id="monthlyChart" height="300"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- En Çok Gönderilen Şehirler -->
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">En Çok Gönderilen Şehirler</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="citiesChart" height="300"></canvas>
+                </div>
+                <div class="card-footer bg-white">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Şehir</th>
+                                    <th>Gönderi Sayısı</th>
+                                    <th>Oran</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for c in top_cities %}
+                                <tr>
+                                    <td>{{ c.receiver_address }}</td>
+                                    <td>{{ c.count }}</td>
+                                    <td>{{ c.percentage|floatformat:1 }}%</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <!-- Durum Dağılımı -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Kargo Durumu Dağılımı</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="statusChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gönderi Türü Dağılımı -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Gönderi Türü Dağılımı</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="typeChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performans Tablosu -->
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Sürücü Performansı</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Sürücü</th>
+                            <th>Toplam Teslimat</th>
+                            <th>Başarılı Teslimat</th>
+                            <th>Başarı Oranı</th>
+                            <th>Ortalama Teslimat Süresi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Bu kısım aslında backendden gelen verilerle dinamik olmalı -->
+                        <tr>
+                            <td>Ahmet Yılmaz</td>
+                            <td>125</td>
+                            <td>120</td>
+                            <td>96%</td>
+                            <td>1.2 gün</td>
+                        </tr>
+                        <tr>
+                            <td>Mehmet Kaya</td>
+                            <td>98</td>
+                            <td>95</td>
+                            <td>97%</td>
+                            <td>1.1 gün</td>
+                        </tr>
+                        <tr>
+                            <td>Ali Demir</td>
+                            <td>145</td>
+                            <td>135</td>
+                            <td>93%</td>
+                            <td>1.5 gün</td>
+                        </tr>
+                        <tr>
+                            <td>Ayşe Çelik</td>
+                            <td>78</td>
+                            <td>75</td>
+                            <td>96%</td>
+                            <td>1.3 gün</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <!-- Rapor İndirme Seçenekleri -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Raporları İndir</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-file-pdf fa-3x text-danger mb-3"></i>
+                                    <h5>Günlük Rapor</h5>
+                                    <p class="text-muted small">Son 24 saate ait tüm veriler</p>
+                                    <button class="btn btn-sm btn-outline-danger">PDF İndir</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-file-excel fa-3x text-success mb-3"></i>
+                                    <h5>Haftalık Rapor</h5>
+                                    <p class="text-muted small">Son 7 güne ait tüm veriler</p>
+                                    <button class="btn btn-sm btn-outline-success">Excel İndir</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-file-csv fa-3x text-primary mb-3"></i>
+                                    <h5>Aylık Rapor</h5>
+                                    <p class="text-muted small">Son 30 güne ait tüm veriler</p>
+                                    <button class="btn btn-sm btn-outline-primary">CSV İndir</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-calendar-alt fa-3x text-info mb-3"></i>
+                                    <h5>Özel Rapor</h5>
+                                    <p class="text-muted small">Seçtiğiniz tarih aralığı için rapor</p>
+                                    <button class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#customReportModal">Oluştur</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Özel Rapor Modalı -->
+<div class="modal fade" id="customReportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">Özel Rapor Oluştur</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Başlangıç Tarihi</label>
+                    <input type="date" class="form-control" id="startDate">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Bitiş Tarihi</label>
+                    <input type="date" class="form-control" id="endDate">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Rapor Formatı</label>
+                    <select class="form-select" id="reportFormat">
+                        <option value="pdf">PDF</option>
+                        <option value="excel">Excel</option>
+                        <option value="csv">CSV</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Rapor İçeriği</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="shipments" id="includeShipments" checked>
+                        <label class="form-check-label" for="includeShipments">
+                            Gönderi İstatistikleri
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="cities" id="includeCities" checked>
+                        <label class="form-check-label" for="includeCities">
+                            Şehir Dağılımı
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="drivers" id="includeDrivers" checked>
+                        <label class="form-check-label" for="includeDrivers">
+                            Sürücü Performansı
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="vehicles" id="includeVehicles" checked>
+                        <label class="form-check-label" for="includeVehicles">
+                            Araç Kullanımı
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-info" id="generateReport">Rapor Oluştur</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Günlük Chart
+        const dailyCtx = document.getElementById('dailyChart').getContext('2d');
+        const dailyChart = new Chart(dailyCtx, {
+            type: 'line',
+            data: {
+                labels: ['00:00', '03:00', '06:00', '09:00', '12:00', '15:00', '18:00', '21:00'],
+                datasets: [{
+                    label: 'Oluşturulan Gönderiler',
+                    data: [12, 8, 3, 17, 23, 18, 15, 10],
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    tension: 0.4
+                }, {
+                    label: 'Teslim Edilen Gönderiler',
+                    data: [5, 3, 2, 8, 15, 20, 12, 8],
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Bugün'
+                    }
+                }
+            }
+        });
+
+        // Haftalık Chart
+        const weeklyCtx = document.getElementById('weeklyChart').getContext('2d');
+        const weeklyChart = new Chart(weeklyCtx, {
+            type: 'line',
+            data: {
+                labels: ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'],
+                datasets: [{
+                    label: 'Oluşturulan Gönderiler',
+                    data: [65, 78, 85, 82, 90, 45, 30],
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    tension: 0.4
+                }, {
+                    label: 'Teslim Edilen Gönderiler',
+                    data: [55, 70, 75, 80, 85, 40, 25],
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Bu Hafta'
+                    }
+                }
+            }
+        });
+
+        // Aylık Chart
+        const monthlyCtx = document.getElementById('monthlyChart').getContext('2d');
+        const monthlyChart = new Chart(monthlyCtx, {
+            type: 'bar',
+            data: {
+                labels: ['1. Hafta', '2. Hafta', '3. Hafta', '4. Hafta'],
+                datasets: [{
+                    label: 'Oluşturulan Gönderiler',
+                    data: [280, 320, 340, 315],
+                    backgroundColor: 'rgba(75, 192, 192, 0.7)'
+                }, {
+                    label: 'Teslim Edilen Gönderiler',
+                    data: [250, 300, 310, 290],
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Bu Ay'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Şehirler Chart
+        const citiesCtx = document.getElementById('citiesChart').getContext('2d');
+        const citiesChart = new Chart(citiesCtx, {
+            type: 'pie',
+            data: {
+                labels: [{% for c in top_cities %}'{{ c.receiver_address }}',{% endfor %} 'Diğer'],
+                datasets: [{
+                    data: [{% for c in top_cities %}{{ c.count }},{% endfor %} 50],
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.7)',
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(255, 206, 86, 0.7)',
+                        'rgba(75, 192, 192, 0.7)',
+                        'rgba(153, 102, 255, 0.7)',
+                        'rgba(255, 159, 64, 0.7)'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                    }
+                }
+            }
+        });
+
+        // Durum Dağılımı Chart
+        const statusCtx = document.getElementById('statusChart').getContext('2d');
+        const statusChart = new Chart(statusCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Hazırlanıyor', 'Yolda', 'Dağıtımda', 'Teslim Edildi', 'Teslim Edilemedi'],
+                datasets: [{
+                    data: [15, 30, 25, 120, 10],
+                    backgroundColor: [
+                        'rgba(108, 117, 125, 0.7)',
+                        'rgba(255, 193, 7, 0.7)',
+                        'rgba(23, 162, 184, 0.7)',
+                        'rgba(40, 167, 69, 0.7)',
+                        'rgba(220, 53, 69, 0.7)'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    }
+                }
+            }
+        });
+
+        // Gönderi Türü Chart
+        const typeCtx = document.getElementById('typeChart').getContext('2d');
+        const typeChart = new Chart(typeCtx, {
+            type: 'polarArea',
+            data: {
+                labels: ['Belge', 'Koli', 'Palet', 'Diğer'],
+                datasets: [{
+                    data: [60, 120, 45, 25],
+                    backgroundColor: [
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(255, 193, 7, 0.7)',
+                        'rgba(153, 102, 255, 0.7)',
+                        'rgba(108, 117, 125, 0.7)'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    }
+                }
+            }
+        });
+
+        // Özel Rapor Modal
+        document.getElementById('generateReport').addEventListener('click', function() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const format = document.getElementById('reportFormat').value;
+            
+            if (!startDate || !endDate) {
+                alert('Lütfen başlangıç ve bitiş tarihlerini seçin!');
+                return;
+            }
+            
+            alert(`Özel rapor oluşturuluyor:\nBaşlangıç: ${startDate}\nBitiş: ${endDate}\nFormat: ${format}`);
+            // Bu kısımda normalde backend'e istek atılır
+            
+            const modal = bootstrap.Modal.getInstance(document.getElementById('customReportModal'));
+            modal.hide();
+        });
+    });
+</script>
 {% endblock %}

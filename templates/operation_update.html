@@ -2,39 +2,333 @@
 {% extends "index.html" %}
 {% block content %}
 <div class="container mt-5">
-    <h2>Gönderi Düzenle</h2>
-    <form method="post">
-        {% csrf_token %}
-        <div class="mb-3">
-            <label class="form-label">Durum</label>
-            <select name="status" class="form-select">
-                <option value="preparing" {% if shipment.status == 'preparing' %}selected{% endif %}>Hazırlanıyor</option>
-                <option value="on_the_way" {% if shipment.status == 'on_the_way' %}selected{% endif %}>Yolda</option>
-                <option value="in_distribution" {% if shipment.status == 'in_distribution' %}selected{% endif %}>Dağıtımda</option>
-                <option value="delivered" {% if shipment.status == 'delivered' %}selected{% endif %}>Teslim Edildi</option>
-                <option value="not_delivered" {% if shipment.status == 'not_delivered' %}selected{% endif %}>Teslim Edilemedi</option>
-            </select>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Gönderi Düzenle</h2>
+        <div>
+            <a href="/tracking-result/?tracking_number={{ shipment.tracking_number }}" class="btn btn-info me-2">
+                <i class="fas fa-search"></i> Takip Bilgisi
+            </a>
+            <a href="/operation-panel/" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Geri
+            </a>
         </div>
-        <div class="mb-3">
-            <label class="form-label">Araç</label>
-            <select name="vehicle" class="form-select">
-                <option value="">Seçiniz</option>
-                {% for v in vehicles %}
-                <option value="{{ v.id }}" {% if shipment.vehicle and shipment.vehicle.id == v.id %}selected{% endif %}>{{ v.plate }} - {{ v.model }}</option>
+    </div>
+
+    <div class="row">
+        <!-- Kargo Bilgileri -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Kargo Bilgileri</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold">Takip Numarası:</div>
+                        <div class="col-md-8">{{ shipment.tracking_number }}</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold">Oluşturma Tarihi:</div>
+                        <div class="col-md-8">{{ shipment.created_at|date:'d.m.Y H:i' }}</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold">Gönderi Türü:</div>
+                        <div class="col-md-8">{{ shipment.get_shipment_type_display }}</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold">Ağırlık:</div>
+                        <div class="col-md-8">{{ shipment.weight_kg }} kg</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold">Hacim:</div>
+                        <div class="col-md-8">{{ shipment.volume_m3 }} m³</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold">Tahmini Teslim:</div>
+                        <div class="col-md-8">{{ shipment.estimated_delivery|date:'d.m.Y' }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gönderici/Alıcı Bilgileri -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">Gönderici/Alıcı Bilgileri</h5>
+                </div>
+                <div class="card-body">
+                    <h6 class="mb-2">Gönderici</h6>
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold">Adı:</div>
+                        <div class="col-md-8">{{ shipment.sender_name }}</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold">Adres:</div>
+                        <div class="col-md-8">{{ shipment.sender_address }}</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold">Telefon:</div>
+                        <div class="col-md-8">{{ shipment.sender_phone }}</div>
+                    </div>
+
+                    <hr>
+
+                    <h6 class="mb-2">Alıcı</h6>
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold">Adı:</div>
+                        <div class="col-md-8">{{ shipment.receiver_name }}</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold">Adres:</div>
+                        <div class="col-md-8">{{ shipment.receiver_address }}</div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold">Telefon:</div>
+                        <div class="col-md-8">{{ shipment.receiver_phone }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Operasyon Güncelleme Formu -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">Operasyonel Bilgileri Güncelle</h5>
+        </div>
+        <div class="card-body">
+            <form method="post" id="updateForm">
+                {% csrf_token %}
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Durum</label>
+                            <select name="status" class="form-select" id="statusSelect" required>
+                                <option value="preparing" {% if shipment.status == 'preparing' %}selected{% endif %}>Hazırlanıyor</option>
+                                <option value="on_the_way" {% if shipment.status == 'on_the_way' %}selected{% endif %}>Yolda</option>
+                                <option value="in_distribution" {% if shipment.status == 'in_distribution' %}selected{% endif %}>Dağıtımda</option>
+                                <option value="delivered" {% if shipment.status == 'delivered' %}selected{% endif %}>Teslim Edildi</option>
+                                <option value="not_delivered" {% if shipment.status == 'not_delivered' %}selected{% endif %}>Teslim Edilemedi</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Araç</label>
+                            <select name="vehicle" class="form-select" id="vehicleSelect">
+                                <option value="">Seçiniz</option>
+                                {% for v in vehicles %}
+                                <option value="{{ v.id }}" {% if shipment.vehicle and shipment.vehicle.id == v.id %}selected{% endif %} data-capacity="{{ v.capacity_kg }}" data-volume="{{ v.capacity_m3 }}">{{ v.plate }} - {{ v.model }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text text-muted vehicle-info"></small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Şoför</label>
+                            <select name="driver" class="form-select" id="driverSelect">
+                                <option value="">Seçiniz</option>
+                                {% for d in drivers %}
+                                <option value="{{ d.id }}" {% if shipment.driver and shipment.driver.id == d.id %}selected{% endif %} data-license="{{ d.license_class }}">{{ d.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="form-text text-muted driver-info"></small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Operasyon Notu</label>
+                    <textarea name="note" class="form-control" rows="3" placeholder="Kargoya ait özel not ekleyin..."></textarea>
+                </div>
+
+                <div class="mt-4 d-flex justify-content-between">
+                    <div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Değişiklikleri Kaydet
+                        </button>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-danger" id="showCancelModal">
+                            <i class="fas fa-times-circle"></i> Teslimatı İptal Et
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Durum Geçmişi -->
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="card-title mb-0">Durum Geçmişi</h5>
+        </div>
+        <div class="card-body">
+            <div class="timeline">
+                {% for tracking in shipment.trackings.all|dictsortreversed:"timestamp" %}
+                <div class="timeline-item">
+                    <div class="timeline-marker {% if tracking.status == 'delivered' %}bg-success{% elif tracking.status == 'not_delivered' %}bg-danger{% else %}bg-info{% endif %}"></div>
+                    <div class="timeline-content">
+                        <h6 class="mb-1">{{ tracking.get_status_display }}</h6>
+                        <p class="mb-0 text-muted">{{ tracking.timestamp|date:'d.m.Y H:i' }}</p>
+                        {% if tracking.note %}
+                        <p class="mt-1">{{ tracking.note }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <p>Henüz durum kaydı bulunmuyor.</p>
                 {% endfor %}
-            </select>
+            </div>
         </div>
-        <div class="mb-3">
-            <label class="form-label">Şoför</label>
-            <select name="driver" class="form-select">
-                <option value="">Seçiniz</option>
-                {% for d in drivers %}
-                <option value="{{ d.id }}" {% if shipment.driver and shipment.driver.id == d.id %}selected{% endif %}>{{ d.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <button type="submit" class="btn btn-primary">Kaydet</button>
-        <a href="/operation-panel/" class="btn btn-secondary">Geri</a>
-    </form>
+    </div>
 </div>
+
+<!-- İptal Onay Modalı -->
+<div class="modal fade" id="cancelModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Teslimatı İptal Et</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Bu işlem kargo teslimatını <strong>iptal edildi</strong> olarak işaretleyecektir. Bu işlem geri alınamaz.</p>
+                <p>Devam etmek istediğinizden emin misiniz?</p>
+                <div class="mb-3">
+                    <label class="form-label">İptal Nedeni</label>
+                    <textarea id="cancelReason" class="form-control" rows="3" placeholder="İptal nedenini belirtin..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Vazgeç</button>
+                <button type="button" class="btn btn-danger" id="confirmCancel">İptal Et</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    
+    .timeline:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 9px;
+        width: 2px;
+        height: 100%;
+        background-color: #e9ecef;
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 20px;
+    }
+    
+    .timeline-marker {
+        position: absolute;
+        left: -30px;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+    }
+    
+    .timeline-content {
+        padding-bottom: 10px;
+        border-bottom: 1px solid #e9ecef;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Araç seçildiğinde kapasite bilgisini göster
+        const vehicleSelect = document.getElementById('vehicleSelect');
+        const vehicleInfo = document.querySelector('.vehicle-info');
+        
+        function updateVehicleInfo() {
+            if (vehicleSelect.selectedIndex > 0) {
+                const selectedOption = vehicleSelect.options[vehicleSelect.selectedIndex];
+                const capacity = selectedOption.getAttribute('data-capacity');
+                const volume = selectedOption.getAttribute('data-volume');
+                vehicleInfo.textContent = `Kapasite: ${capacity} kg, ${volume} m³`;
+            } else {
+                vehicleInfo.textContent = '';
+            }
+        }
+        
+        vehicleSelect.addEventListener('change', updateVehicleInfo);
+        updateVehicleInfo(); // Sayfa yüklendiğinde çalıştır
+        
+        // Sürücü seçildiğinde ehliyet bilgisini göster
+        const driverSelect = document.getElementById('driverSelect');
+        const driverInfo = document.querySelector('.driver-info');
+        
+        function updateDriverInfo() {
+            if (driverSelect.selectedIndex > 0) {
+                const selectedOption = driverSelect.options[driverSelect.selectedIndex];
+                const license = selectedOption.getAttribute('data-license');
+                driverInfo.textContent = `Ehliyet Sınıfı: ${license}`;
+            } else {
+                driverInfo.textContent = '';
+            }
+        }
+        
+        driverSelect.addEventListener('change', updateDriverInfo);
+        updateDriverInfo(); // Sayfa yüklendiğinde çalıştır
+        
+        // Duruma göre araç ve sürücü seçimini aktif/pasif yap
+        const statusSelect = document.getElementById('statusSelect');
+        
+        function updateFormBasedOnStatus() {
+            const status = statusSelect.value;
+            
+            if (status === 'delivered' || status === 'not_delivered') {
+                // Teslim edildi veya edilemedi durumlarında araç ve sürücü seçimi opsiyonel
+                vehicleSelect.removeAttribute('required');
+                driverSelect.removeAttribute('required');
+            } else if (status === 'on_the_way' || status === 'in_distribution') {
+                // Yolda veya dağıtımda durumlarında araç ve sürücü seçimi zorunlu
+                vehicleSelect.setAttribute('required', '');
+                driverSelect.setAttribute('required', '');
+            } else {
+                // Hazırlanıyor durumunda araç ve sürücü seçimi opsiyonel
+                vehicleSelect.removeAttribute('required');
+                driverSelect.removeAttribute('required');
+            }
+        }
+        
+        statusSelect.addEventListener('change', updateFormBasedOnStatus);
+        updateFormBasedOnStatus(); // Sayfa yüklendiğinde çalıştır
+        
+        // İptal modalı
+        const showCancelModalBtn = document.getElementById('showCancelModal');
+        const confirmCancelBtn = document.getElementById('confirmCancel');
+        let cancelModal;
+        
+        if (showCancelModalBtn) {
+            showCancelModalBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                cancelModal = new bootstrap.Modal(document.getElementById('cancelModal'));
+                cancelModal.show();
+            });
+            
+            confirmCancelBtn.addEventListener('click', function() {
+                const reason = document.getElementById('cancelReason').value;
+                document.getElementById('statusSelect').value = 'not_delivered';
+                
+                // Not alanına iptal nedenini ekle
+                const noteTextarea = document.querySelector('textarea[name="note"]');
+                noteTextarea.value = `İptal nedeni: ${reason}\n${noteTextarea.value}`;
+                
+                cancelModal.hide();
+                document.getElementById('updateForm').submit();
+            });
+        }
+    });
+</script>
 {% endblock %}
